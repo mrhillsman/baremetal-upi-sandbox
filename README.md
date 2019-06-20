@@ -25,5 +25,5 @@ Special thanks to [Yolanda Robla Mota](https://github.com/yrobla) for all the wo
 Also check out:  
 [https://github.com/e-minguez/ocp4-upi-bm-pxeless-staticips](https://github.com/e-minguez/ocp4-upi-bm-pxeless-staticips)
 [https://github.com/openshift/installer/tree/master/upi/metal](https://github.com/openshift/installer/tree/master/upi/metal)
-[https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html](https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html)
+[https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html]. (https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html)
 

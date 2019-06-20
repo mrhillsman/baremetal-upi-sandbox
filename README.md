@@ -1,5 +1,5 @@
 # baremetal-upi-sandbox
-OCP4.x BareMetal UPI (User Provided Infrastructure) Virtual SandBox
+OCP4.x BareMetal UPI (User Provided Infrastructure) Virtual Sandbox
 
 ![](https://trainingmaterials4423.s3.amazonaws.com/baremetal-upi-sandbox.png)
 

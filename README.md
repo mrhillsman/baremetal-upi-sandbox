@@ -14,6 +14,10 @@ The Baremetal UPI SandBox is a fun way to get a OCP 4.x baremetal install runnin
 * Vagrant 2.2.4 or higher.
 * At least 10GB available RAM.
 
+## TODO
+
+* IPMI support
+
 
 ## Credits
 Special thanks to [Yolanda Robla Mota](https://github.com/yrobla) for all the work on [https://github.com/redhat-nfvpe/upi-rt](https://github.com/redhat-nfvpe/upi-rt). 

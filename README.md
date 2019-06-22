@@ -9,6 +9,7 @@ The Baremetal UPI Sandbox is a fun way to get a OCP 4.x baremetal install runnin
 
 ## TODO
 
+* Consolidate to One Vagrantfile
 * IPMI support
 
 

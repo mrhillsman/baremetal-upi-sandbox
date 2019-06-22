@@ -1,0 +1,28 @@
+Vagrant.configure("2") do |config|
+  config.vm.define :master do |master|
+
+    master.vm.box = 'clink15/pxe'
+    master.vm.box_version = "2"
+    master.vm.hostname = "master"
+
+    master.vm.provider :virtualbox do |vb|
+      vb.memory = '8000'
+      vb.cpus = '3'
+      vb.gui = 'false'
+
+      vb.customize [
+        'modifyvm', :id,
+        '--nic1', 'intnet',
+        '--intnet1', 'pxe_network',
+        '--macaddress1', '0800273D80E3',
+        '--boot1', 'disk',
+        '--boot2', 'net',
+        '--boot3', 'none',
+        '--boot4', 'none'
+      ]
+
+      # Disable question about installation disk on first boot
+      vb.customize [ 'setextradata', :id, 'GUI/FirstRun', 'no' ]
+    end
+  end
+end

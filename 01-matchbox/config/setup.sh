@@ -359,8 +359,7 @@ EOF
 
 sudo -u vagrant /home/vagrant/openshift-install wait-for bootstrap-complete --dir=/tmp/baremetal --log-level debug
 
-
-echo "Destroy Bootstrap and Power On Worker"
+echo "Destroy bootstrap VM and power on worker node"
 
 echo "Approve worker node cert request via "oc adm certificate approve <csr-name>"
 

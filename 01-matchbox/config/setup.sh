@@ -11,7 +11,7 @@ MASTER_MAC="08:00:27:3D:80:E3"
 WORKER_IP=192.168.0.4
 WORKER_MAC="08:00:27:3D:80:E4"
 CLUSTER_DOMAIN=example.org
-CLUSTER_NAME=example.org
+CLUSTER_NAME=mycluster
 PULL_SECRET=<your-pull-secret>
 SSH_KEY=<your-public-ssh-key>
 
@@ -276,6 +276,10 @@ sudo -u vagrant wget -v https://mirror.openshift.com/pub/openshift-v4/clients/oc
 sudo -u vagrant tar xzf openshift-install-linux-4.1.0.tar.gz
 sudo -u vagrant /home/vagrant/openshift-install create ignition-configs --dir=/tmp/baremetal
 
+# download and setup openshift client
+sudo -u vagrant wget -v https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.1.0/openshift-client-linux-4.1.0.tar.gz
+sudo -u vagrant tar xzf openshift-client-linux-4.1.0.tar.gz
+
 # fetch RHCOS
 sudo -u vagrant wget -v https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.1/4.1.0/rhcos-4.1.0-x86_64-installer-initramfs.img -O /home/vagrant/matchbox/examples/assets/rhcos-4.1.0-x86_64-installer-initramfs.img
 sudo -u vagrant wget -v https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.1/4.1.0/rhcos-4.1.0-x86_64-installer-kernel -O /home/vagrant/matchbox/examples/assets/rhcos-4.1.0-x86_64-installer-kernel
@@ -357,10 +361,21 @@ cat <<EOF | sudo tee /etc/resolv.conf
 nameserver 192.168.0.254
 EOF
 
+echo "Manually 'vagrant up' the Bootstrap and Master nodes"
+
+# Wait for bootstrapping to complete...
 sudo -u vagrant /home/vagrant/openshift-install wait-for bootstrap-complete --dir=/tmp/baremetal --log-level debug
 
-echo "Destroy bootstrap VM and power on worker node"
+echo "Destroy Bootstrap and 'vagrant up' the Worker"
 
-echo "Approve worker node cert request via "oc adm certificate approve <csr-name>"
+sleep 300
 
+# Approve pending worker CSR request
+export KUBECONFIG=/tmp/baremetal/auth/kubeconfig
+/home/vagrant/oc get csr -ojson | jq -r '.items[] | select(.status == {} ) | .metadata.name' | xargs oc adm certificate approve
+
+# Updating image-registry to emptyDir storage backend
+/home/vagrant/oc patch configs.imageregistry.operator.openshift.io cluster --type merge --patch '{"spec":{"storage":{"emptyDir":{}}}}'
+
+# Wait for install to complete...
 sudo -u vagrant /home/vagrant/openshift-install wait-for install-complete --dir=/tmp/baremetal --log-level debug

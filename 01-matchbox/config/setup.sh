@@ -264,6 +264,14 @@ sudo -u vagrant cat <<EOF | tee /tmp/baremetal/install-config.yaml
    replicas: 1
  metadata:
    name: ${CLUSTER_NAME}
+ networking:
+   clusterNetwork:
+   - cidr: 10.128.0.0/14
+     hostPrefix: 23
+   machineCIDR: 10.0.0.0/16
+   networkType: OpenShiftSDN
+   serviceNetwork:
+   - 172.30.0.0/16
  platform:
    none: {}
  pullSecret: '${PULL_SECRET}'

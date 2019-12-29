@@ -264,6 +264,14 @@ sudo -u vagrant cat <<EOF | tee /tmp/baremetal/install-config.yaml
    replicas: 1
  metadata:
    name: ${CLUSTER_NAME}
+ networking:
+   clusterNetwork:
+   - cidr: 10.128.0.0/14
+     hostPrefix: 23
+   machineCIDR: 10.0.0.0/16
+   networkType: OpenShiftSDN
+   serviceNetwork:
+   - 172.30.0.0/16
  platform:
    none: {}
  pullSecret: '${PULL_SECRET}'
@@ -274,6 +282,7 @@ EOF
 # download and setup openshift-install
 sudo -u vagrant wget -v https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.1.0/openshift-install-linux-4.1.0.tar.gz
 sudo -u vagrant tar xzf openshift-install-linux-4.1.0.tar.gz
+sudo -u vagrant /home/vagrant/openshift-install create manifests --dir=/tmp/baremetal
 sudo -u vagrant /home/vagrant/openshift-install create ignition-configs --dir=/tmp/baremetal
 
 # download and setup openshift client

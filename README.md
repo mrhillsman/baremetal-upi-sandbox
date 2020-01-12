@@ -19,7 +19,7 @@ The Baremetal UPI Sandbox is a fun way to get a OCP 4.x baremetal install runnin
 * IPMI support
 
 ## Credits
-Special thanks to [Yolanda Robla Mota](https://github.com/yrobla) for all the work on [https://github.com/redhat-nfvpe/upi-rt](https://github.com/redhat-nfvpe/upi-rt). 
+Special thanks to [Matthew Dorn](https://github.com/madorn) and [Yolanda Robla Mota](https://github.com/yrobla) for all the work on [https://github.com/redhat-nfvpe/upi-rt](https://github.com/redhat-nfvpe/upi-rt). 
 
 Also check out:  
 [https://github.com/e-minguez/ocp4-upi-bm-pxeless-staticips](https://github.com/e-minguez/ocp4-upi-bm-pxeless-staticips)  

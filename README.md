@@ -7,6 +7,13 @@ OCP4.x BareMetal UPI (User Provided Infrastructure) Virtual Sandbox
 ## Introduction
 The Baremetal UPI Sandbox is a fun way to get a OCP 4.x baremetal install running on your local system. It currently uses [VirtualBox](https://www.virtualbox.org), [Vagrant](http://vagrantup.com), [Dnsmasq](https://www.thekelleys.org.uk/dnsmasq/doc.html), [Matchbox](https://github.com/poseidon/matchbox), [Terraform](https://www.terraform.io), [CoreDNS](https://coredns.io), and [HA Proxy](https://haproxy.org). It is for educational purposes only.
 
+## Instructions
+### Prerequisites
+
+### Using launcher.py
+
+###
+
 ## TODO
 * Consolidate to single Vagrantfile
 * IPMI support

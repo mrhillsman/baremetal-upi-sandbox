@@ -10,6 +10,31 @@ The Baremetal UPI Sandbox is a fun way to get a OCP 4.x baremetal install runnin
 ## Instructions
 ### Prerequisites
 
+### Using mksetup.py
+```shell
+root@host:~/baremetal-upi-sandbox# ./mksetup.py -h
+usage: mksetup.py [-h] [-d CLUSTER_DOMAIN] [-n CLUSTER_NAME]
+                  [-m CLUSTER_MASTERS] [-w CLUSTER_WORKERS]
+                  [-k CLUSTER_SSH_KEY] [-s CLUSTER_PULL_SECRET]
+
+Pythonn script to create matchbox node setup script
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d CLUSTER_DOMAIN, --cluster-domain CLUSTER_DOMAIN
+                        Domain of cluster; i.e. example.com
+  -n CLUSTER_NAME, --cluster-name CLUSTER_NAME
+                        Cluster name to be used before domain
+  -m CLUSTER_MASTERS, --masters CLUSTER_MASTERS
+                        Number of masters to create
+  -w CLUSTER_WORKERS, --workers CLUSTER_WORKERS
+                        Number of workers to create
+  -k CLUSTER_SSH_KEY, --ssh-key CLUSTER_SSH_KEY
+                        SSH key to inject
+  -s CLUSTER_PULL_SECRET, --pull-secret CLUSTER_PULL_SECRET
+                        Pull secret for Red Hat registry
+```
+
 ### Using launcher.py
 
 ###

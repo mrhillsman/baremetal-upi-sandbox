@@ -27,11 +27,11 @@ bootstrap_ipmi_pass='password'
 bootstrap_ipmi_port='10000'
 cluster_masters=args.cluster_masters
 cluster_workers=args.cluster_workers
-openshift_install_version=
-openshift_client_version=
-rhcos_initrd=
-rhcos_kernel=
-rhcos_osimage=
+openshift_installer='https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/4.3.0-0.nightly-2020-01-11-070223/openshift-install-linux-4.3.0-0.nightly-2020-01-11-070223.tar.gz'
+openshift_client='https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/4.3.0-0.nightly-2020-01-11-070223/openshift-client-linux-4.3.0-0.nightly-2020-01-11-070223.tar.gz'
+rhcos_initrd='https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.2/latest/rhcos-4.2.0-x86_64-installer-initramfs.img'
+rhcos_kernel='https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.2/latest/rhcos-4.2.0-x86_64-installer-kernel'
+rhcos_osimage='https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.2/latest/rhcos-4.2.0-x86_64-metal-bios.raw.gz'
 
 print("""\
 #!/usr/bin/env bash
@@ -292,7 +292,7 @@ sudo -u vagrant cat <<EOF | tee /home/vagrant/coredns/db.${CLUSTER_DOMAIN}
 
 for master in range(cluster_masters):
     print("""\
-_etcd-server-ssl._tcp.${{CLUSTER_NAME}}.${{CLUSTER_DOMAIN}}. 8640 IN    SRV 0 10 2380 etcd{0}.${{CLUSTER_NAME}}.${{CLUSTER_DOMAIN}}.
+_etcd-server-ssl._tcp.${{CLUSTER_NAME}}.${{CLUSTER_DOMAIN}}. 8640 IN    SRV 0 10 2380 etcd-{0}.${{CLUSTER_NAME}}.${{CLUSTER_DOMAIN}}.
 """.format(master))
 
 print("""\
@@ -304,7 +304,7 @@ ${CLUSTER_NAME}-bootstrap.${CLUSTER_DOMAIN}.        A ${BOOTSTRAP_IP}
 for master in range(cluster_masters):
     print("""\
 ${{CLUSTER_NAME}}-master{0}.${{CLUSTER_DOMAIN}}.    A ${{MASTER{0}_IP}}
-etcd{0}.${{CLUSTER_NAME}}.${{CLUSTER_DOMAIN}}.      IN  CNAME ${{CLUSTER_NAME}}-master{0}.${{CLUSTER_DOMAIN}}.\
+etcd-{0}.${{CLUSTER_NAME}}.${{CLUSTER_DOMAIN}}.      IN  CNAME ${{CLUSTER_NAME}}-master{0}.${{CLUSTER_DOMAIN}}.\
 """.format(master))
 
 for worker in range(cluster_workers):
@@ -390,21 +390,38 @@ sudo -u vagrant cat <<EOF | tee /tmp/baremetal/install-config.yaml
    ${SSH_KEY}
 EOF
 
+""")
+
+print("""\
 # download and setup openshift-install
-sudo -u vagrant wget -v https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.1.0/openshift-install-linux-4.1.0.tar.gz
-sudo -u vagrant tar xzf openshift-install-linux-4.1.0.tar.gz
+sudo -u vagrant wget -v {}
+sudo -u vagrant tar xzf {}
+""".format(openshift_installer, openshift_installer.split("/")[-1]))
+
+print("""\
 sudo -u vagrant /home/vagrant/openshift-install create manifests --dir=/tmp/baremetal
 sudo -u vagrant /home/vagrant/openshift-install create ignition-configs --dir=/tmp/baremetal
+""")
 
+print("""\
 # download and setup openshift client
-sudo -u vagrant wget -v https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.1.0/openshift-client-linux-4.1.0.tar.gz
-sudo -u vagrant tar xzf openshift-client-linux-4.1.0.tar.gz
+sudo -u vagrant wget -v {}
+sudo -u vagrant tar xzf {}
+""".format(openshift_client, openshift_client.split("/")[-1]))
 
+print("""\
 # fetch RHCOS
-sudo -u vagrant wget -v https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.1/4.1.0/rhcos-4.1.0-x86_64-installer-initramfs.img -O /home/vagrant/matchbox/examples/assets/rhcos-4.1.0-x86_64-installer-initramfs.img
-sudo -u vagrant wget -v https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.1/4.1.0/rhcos-4.1.0-x86_64-installer-kernel -O /home/vagrant/matchbox/examples/assets/rhcos-4.1.0-x86_64-installer-kernel
-sudo -u vagrant wget -v https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.1/4.1.0/rhcos-4.1.0-x86_64-metal-bios.raw.gz -O /home/vagrant/matchbox/examples/assets/rhcos-4.1.0-x86_64-metal-bios.raw.gz
+sudo -u vagrant wget -v {} -O /home/vagrant/matchbox/examples/assets/{}
+sudo -u vagrant wget -v {} -O /home/vagrant/matchbox/examples/assets/{}
+sudo -u vagrant wget -v {} -O /home/vagrant/matchbox/examples/assets/{}
+""".format(rhcos_initrd,
+    rhcos_initrd.split("/")[-1],
+    rhcos_kernel,
+    rhcos_kernel.split("/")[-1],
+    rhcos_osimage,
+    rhcos_osimage.split("/")[-1]))
 
+print("""\
 # setup terraform for bootstrap + master
 sudo -u vagrant mkdir -p /home/vagrant/matchbox/examples/terraform/ocp4
 sudo -u vagrant git clone https://github.com/mrhillsman/upi-rt
@@ -418,11 +435,15 @@ matchbox_client_key = "/home/vagrant/.matchbox/client.key"
 matchbox_http_endpoint = "http://${MATCHBOX_IP}:8080"
 matchbox_rpc_endpoint = "${MATCHBOX_IP}:8081"
 matchbox_trusted_ca_cert = "/home/vagrant/matchbox/examples/etc/matchbox/ca.crt"
+""")
 
-pxe_initrd_url = "assets/rhcos-4.1.0-x86_64-installer-initramfs.img"
-pxe_kernel_url = "assets/rhcos-4.1.0-x86_64-installer-kernel"
-pxe_os_image_url = "http://${VIP_IP}:8080/assets/rhcos-4.1.0-x86_64-metal-bios.raw.gz"
+print("""\
+pxe_initrd_url = "assets/{}"
+pxe_kernel_url = "assets/{}"
+pxe_os_image_url = "http://${{VIP_IP}}:8080/assets/{}"
+""".format(rhcos_initrd.split("/")[-1], rhcos_kernel.split("/")[-1], rhcos_osimage.split("/")[-1]))
 
+print("""\
 bootstrap_public_ipv4 = "${BOOTSTRAP_IP}"
 bootstrap_mac_address = "${BOOTSTRAP_MAC}"
 bootstrap_ipmi_host = "${HOST_IP}"
@@ -459,11 +480,13 @@ matchbox_client_key = "/home/vagrant/.matchbox/client.key"
 matchbox_http_endpoint = "http://${MATCHBOX_IP}:8080"
 matchbox_rpc_endpoint = "${MATCHBOX_IP}:8081"
 matchbox_trusted_ca_cert = "/home/vagrant/matchbox/examples/etc/matchbox/ca.crt"
-
-pxe_initrd_url = "assets/rhcos-4.1.0-x86_64-installer-initramfs.img"
-pxe_kernel_url = "assets/rhcos-4.1.0-x86_64-installer-kernel"
-pxe_os_image_url = "http://${VIP_IP}:8080/assets/rhcos-4.1.0-x86_64-metal-bios.raw.gz"\
 """)
+
+print("""\
+pxe_initrd_url = "assets/{}"
+pxe_kernel_url = "assets/{}"
+pxe_os_image_url = "http://${{VIP_IP}}:8080/assets/{}"
+""".format(rhcos_initrd.split("/")[-1], rhcos_kernel.split("/")[-1], rhcos_osimage.split("/")[-1]))
 
 for worker in range(cluster_workers):
     print("""\

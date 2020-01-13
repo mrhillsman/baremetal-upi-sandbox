@@ -17,7 +17,6 @@ if args.cluster_masters < 0 or args.cluster_masters > 9:
 if args.cluster_workers < 0 or args.cluster_workers > 30:
      parser.error('The number of masters must be a positive integer less than or equal to 30.')
 
-#TODO these should become arguments
 matchbox_ip='192.168.0.254'
 vip_ip='192.168.0.254'
 host_ip="192.168.0.1"
@@ -28,13 +27,16 @@ bootstrap_ipmi_pass='password'
 bootstrap_ipmi_port='10000'
 cluster_masters=args.cluster_masters
 cluster_workers=args.cluster_workers
+openshift_install_version=
+openshift_client_version=
+rhcos_initrd=
+rhcos_kernel=
+rhcos_osimage=
 
 print("""\
 #!/usr/bin/env bash
 
 set -x
-set -e
-set -o
 """)
 
 print("""\
@@ -84,7 +86,7 @@ sudo systemctl disable firewalld
 sudo dnf check-update
 
 # install stuff
-sudo dnf install -y podman bind-utils jq
+sudo dnf install -y podman bind-utils jq wget unzip ipmitool
 
 # create haproxy directory
 sudo -u vagrant mkdir /home/vagrant/haproxy
@@ -142,7 +144,7 @@ frontend machine-config-server
 backend machine-config-server
     balance source
     mode tcp
-    server bootstrap :22623 check\
+    server bootstrap ${BOOTSTRAP_IP}:22623 check\
 """)
 
 for master in range(cluster_masters):
@@ -286,22 +288,28 @@ sudo -u vagrant cat <<EOF | tee /home/vagrant/coredns/db.${CLUSTER_DOMAIN}
                                 3600       ; minimum (1 hour)
                                 )
 
-_etcd-server-ssl._tcp.${CLUSTER_NAME}.${CLUSTER_DOMAIN}. 8640 IN    SRV 0 10 2380 etcd-0.${CLUSTER_NAME}.${CLUSTER_DOMAIN}.
+""")
 
-api.${CLUSTER_NAME}.${CLUSTER_DOMAIN}.    A ${VIP_IP}
-api-int.${CLUSTER_NAME}.${CLUSTER_DOMAIN}.    A ${VIP_IP}
-${CLUSTER_NAME}-bootstrap.${CLUSTER_DOMAIN}.    A ${BOOTSTRAP_IP}
+for master in range(cluster_masters):
+    print("""\
+_etcd-server-ssl._tcp.${{CLUSTER_NAME}}.${{CLUSTER_DOMAIN}}. 8640 IN    SRV 0 10 2380 etcd{0}.${{CLUSTER_NAME}}.${{CLUSTER_DOMAIN}}.
+""".format(master))
+
+print("""\
+api.${CLUSTER_NAME}.${CLUSTER_DOMAIN}.              A ${VIP_IP}
+api-int.${CLUSTER_NAME}.${CLUSTER_DOMAIN}.          A ${VIP_IP}
+${CLUSTER_NAME}-bootstrap.${CLUSTER_DOMAIN}.        A ${BOOTSTRAP_IP}
 """)
 
 for master in range(cluster_masters):
     print("""\
 ${{CLUSTER_NAME}}-master{0}.${{CLUSTER_DOMAIN}}.    A ${{MASTER{0}_IP}}
-etcd{0}.${{CLUSTER_NAME}}.${{CLUSTER_DOMAIN}}.    IN  CNAME ${{CLUSTER_NAME}}-master{0}.${{CLUSTER_DOMAIN}}.\
+etcd{0}.${{CLUSTER_NAME}}.${{CLUSTER_DOMAIN}}.      IN  CNAME ${{CLUSTER_NAME}}-master{0}.${{CLUSTER_DOMAIN}}.\
 """.format(master))
 
 for worker in range(cluster_workers):
     print("""\
-${{CLUSTER_NAME}}-worker{0}.${{CLUSTER_DOMAIN}}.    A ${{WORKER_IP}}\
+${{CLUSTER_NAME}}-worker{0}.${{CLUSTER_DOMAIN}}.    A ${{WORKER{0}_IP}}\
 """.format(worker))
 
 print("""\
@@ -335,7 +343,7 @@ sudo rm /etc/resolv.conf
 
 # create new resolv.conf
 cat <<EOF | sudo tee /etc/resolv.conf
-nameserver ${VIP_IP}
+nameserver ${HOST_IP}
 EOF
 
 # none: NetworkManager will not modify resolv.conf.
@@ -417,7 +425,7 @@ pxe_os_image_url = "http://${VIP_IP}:8080/assets/rhcos-4.1.0-x86_64-metal-bios.r
 
 bootstrap_public_ipv4 = "${BOOTSTRAP_IP}"
 bootstrap_mac_address = "${BOOTSTRAP_MAC}"
-bootstrap_ipmi_host = "${{HOST_IP}}"
+bootstrap_ipmi_host = "${HOST_IP}"
 bootstrap_ipmi_user = "${BOOTSTRAP_IPMI_USER}"
 bootstrap_ipmi_pass = "${BOOTSTRAP_IPMI_PASS}"
 bootstrap_ipmi_port = "${BOOTSTRAP_IPMI_PORT}"

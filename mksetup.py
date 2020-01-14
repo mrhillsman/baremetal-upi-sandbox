@@ -27,11 +27,12 @@ bootstrap_ipmi_pass='password'
 bootstrap_ipmi_port='10000'
 cluster_masters=args.cluster_masters
 cluster_workers=args.cluster_workers
-openshift_installer='https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/4.3.0-0.nightly-2020-01-11-070223/openshift-install-linux-4.3.0-0.nightly-2020-01-11-070223.tar.gz'
-openshift_client='https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/4.3.0-0.nightly-2020-01-11-070223/openshift-client-linux-4.3.0-0.nightly-2020-01-11-070223.tar.gz'
-rhcos_initrd='https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.2/latest/rhcos-4.2.0-x86_64-installer-initramfs.img'
-rhcos_kernel='https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.2/latest/rhcos-4.2.0-x86_64-installer-kernel'
-rhcos_osimage='https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.2/latest/rhcos-4.2.0-x86_64-metal-bios.raw.gz'
+openshift_installer='https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest-4.4/openshift-install-linux-4.4.0-0.nightly-2020-01-14-004804.tar.gz'
+openshift_client='https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest-4.4/openshift-client-linux-4.4.0-0.nightly-2020-01-14-004804.tar.gz'
+rhcos_baseuri='https://releases-art-rhcos.svc.ci.openshift.org/art/storage/releases/rhcos-4.4/44.81.202001030903.0/x86_64/'
+rhcos_initrd=rhcos_baseuri + 'rhcos-44.81.202001030903.0-installer-initramfs.x86_64.img'
+rhcos_kernel=rhcos_baseuri + 'rhcos-44.81.202001030903.0-installer-kernel-x86_64'
+rhcos_osimage=rhcos_baseuri + 'rhcos-44.81.202001030903.0-metal.x86_64.raw.gz'
 
 print("""\
 #!/usr/bin/env bash
@@ -451,18 +452,25 @@ bootstrap_ipmi_user = "${BOOTSTRAP_IPMI_USER}"
 bootstrap_ipmi_pass = "${BOOTSTRAP_IPMI_PASS}"
 bootstrap_ipmi_port = "${BOOTSTRAP_IPMI_PORT}"
 bootstrap_ign_file = "/tmp/baremetal/bootstrap.ign"
+
+master_nodes = [\
 """)
 
 for master in range(cluster_masters):
     print("""\
-master_public_ipv4 = "${{MASTER{0}_IP}}"
-master_mac_address = "${{MASTER{0}_MAC}}"
-master_ipmi_host = "${{HOST_IP}}"
-master_ipmi_user = "${{MASTER{0}_IPMI_USER}}"
-master_ipmi_pass = "${{MASTER{0}_IPMI_PASS}}"
-master_ipmi_port = "${{MASTER{0}_IPMI_PORT}}"
-master_ign_file = "/tmp/baremetal/master.ign"
+  {{
+    name = "master{0}",
+    master_public_ipv4 = "${{MASTER{0}_IP}}",
+    master_mac_address = "${{MASTER{0}_MAC}}",
+    master_ipmi_host = "${{HOST_IP}}",
+    master_ipmi_user = "${{MASTER{0}_IPMI_USER}}",
+    master_ipmi_pass = "${{MASTER{0}_IPMI_PASS}}",
+    master_ipmi_port = "${{MASTER{0}_IPMI_PORT}}",
+    master_ign_file = "/tmp/baremetal/master.ign"
+  }},\
 """.format(master))
+
+print("]\n")
 
 if cluster_masters == 1:
     print("master_count = 1\nEOF")
@@ -486,18 +494,25 @@ print("""\
 pxe_initrd_url = "assets/{}"
 pxe_kernel_url = "assets/{}"
 pxe_os_image_url = "http://${{VIP_IP}}:8080/assets/{}"
+
+worker_nodes = [\
 """.format(rhcos_initrd.split("/")[-1], rhcos_kernel.split("/")[-1], rhcos_osimage.split("/")[-1]))
 
 for worker in range(cluster_workers):
     print("""\
-worker_public_ipv4 = "${{WORKER{0}_IP}}"
-worker_mac_address = "${{WORKER{0}_MAC}}"
-worker_ipmi_host = "${{HOST_IP}}"
-worker_ipmi_user = "${{WORKER{0}_IPMI_USER}}"
-worker_ipmi_pass = "${{WORKER{0}_IPMI_PASS}}"
-worker_ipmi_port = "${{WORKER{0}_IPMI_PORT}}"
-worker_ign_file = "/tmp/baremetal/worker.ign"
+  {{
+    name = "worker{0}",
+    worker_public_ipv4 = "${{WORKER{0}_IP}}",
+    worker_mac_address = "${{WORKER{0}_MAC}}",
+    worker_ipmi_host = "${{HOST_IP}}",
+    worker_ipmi_user = "${{WORKER{0}_IPMI_USER}}",
+    worker_ipmi_pass = "${{WORKER{0}_IPMI_PASS}}",
+    worker_ipmi_port = "${{WORKER{0}_IPMI_PORT}}",
+    worker_ign_file = "/tmp/baremetal/worker.ign"
+  }},\
 """.format(worker))
+
+print("]\n")
 
 if cluster_workers == 1:
     print("worker_count = 1\nEOF")

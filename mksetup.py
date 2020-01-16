@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
-parser = argparse.ArgumentParser(description='Pythonn script to create matchbox node setup script')
+parser = argparse.ArgumentParser(description='Python script to create matchbox node setup script')
 parser.add_argument('-d', '--cluster-domain', action='store', dest='cluster_domain', type=str, default='local.lab', help='Domain of cluster; i.e. example.com')
 parser.add_argument('-n', '--cluster-name', action='store', dest='cluster_name', type=str, default='os', help='Cluster name to be used before domain')
 parser.add_argument('-m', '--masters', action='store', dest='cluster_masters', type=int, default=1, help='Number of masters to create')
@@ -27,17 +27,22 @@ bootstrap_ipmi_pass='password'
 bootstrap_ipmi_port='10000'
 cluster_masters=args.cluster_masters
 cluster_workers=args.cluster_workers
-openshift_installer='https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest-4.4/openshift-install-linux-4.4.0-0.nightly-2020-01-14-004804.tar.gz'
-openshift_client='https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest-4.4/openshift-client-linux-4.4.0-0.nightly-2020-01-14-004804.tar.gz'
-rhcos_baseuri='https://releases-art-rhcos.svc.ci.openshift.org/art/storage/releases/rhcos-4.4/44.81.202001030903.0/x86_64/'
+openshift_installer='http://192.168.0.1:8080/openshift-install-linux-4.4.0-0.nightly-2020-01-14-004804.tar.gz'
+openshift_client='http://192.168.0.1:8080/openshift-client-linux-4.4.0-0.nightly-2020-01-14-004804.tar.gz'
+rhcos_baseuri='http://192.168.0.1:8080/'
 rhcos_initrd=rhcos_baseuri + 'rhcos-44.81.202001030903.0-installer-initramfs.x86_64.img'
 rhcos_kernel=rhcos_baseuri + 'rhcos-44.81.202001030903.0-installer-kernel-x86_64'
 rhcos_osimage=rhcos_baseuri + 'rhcos-44.81.202001030903.0-metal.x86_64.raw.gz'
+#rhcos_baseuri='https://releases-art-rhcos.svc.ci.openshift.org/art/storage/releases/rhcos-4.4/44.81.202001030903.0/x86_64/'
+#rhcos_initrd=rhcos_baseuri + 'rhcos-44.81.202001030903.0-installer-initramfs.x86_64.img'
+#rhcos_kernel=rhcos_baseuri + 'rhcos-44.81.202001030903.0-installer-kernel-x86_64'
+#rhcos_osimage=rhcos_baseuri + 'rhcos-44.81.202001030903.0-metal.x86_64.raw.gz'
 
 print("""\
 #!/usr/bin/env bash
 
 set -x
+
 """)
 
 print("""\
@@ -87,7 +92,7 @@ sudo systemctl disable firewalld
 sudo dnf check-update
 
 # install stuff
-sudo dnf install -y podman bind-utils jq wget unzip ipmitool
+sudo dnf install -y podman bind-utils jq wget unzip ipmitool vim
 
 # create haproxy directory
 sudo -u vagrant mkdir /home/vagrant/haproxy
@@ -197,10 +202,10 @@ sudo podman run -d --rm \\
   haproxy:alpine
 
 # install terraform + matchbox provider
-sudo -u vagrant wget -v https://releases.hashicorp.com/terraform/0.12.2/terraform_0.12.2_linux_amd64.zip
+sudo -u vagrant wget -v http://192.168.0.1:8080/terraform_0.12.2_linux_amd64.zip
 sudo unzip terraform_0.12.2_linux_amd64.zip -d /bin
 
-sudo -u vagrant wget -v https://github.com/poseidon/terraform-provider-matchbox/releases/download/v0.3.0/terraform-provider-matchbox-v0.3.0-linux-amd64.tar.gz
+sudo -u vagrant wget -v http://192.168.0.1:8080/terraform-provider-matchbox-v0.3.0-linux-amd64.tar.gz
 sudo -u vagrant tar xzf terraform-provider-matchbox-v0.3.0-linux-amd64.tar.gz
 sudo -u vagrant cat <<EOF | tee /home/vagrant/.terraformrc
 providers {
@@ -293,10 +298,10 @@ sudo -u vagrant cat <<EOF | tee /home/vagrant/coredns/db.${CLUSTER_DOMAIN}
 
 for master in range(cluster_masters):
     print("""\
-_etcd-server-ssl._tcp.${{CLUSTER_NAME}}.${{CLUSTER_DOMAIN}}. 8640 IN    SRV 0 10 2380 etcd-{0}.${{CLUSTER_NAME}}.${{CLUSTER_DOMAIN}}.
+_etcd-server-ssl._tcp.${{CLUSTER_NAME}}.${{CLUSTER_DOMAIN}}. 8640 IN    SRV 0 10 2380 etcd-{0}.${{CLUSTER_NAME}}.${{CLUSTER_DOMAIN}}.\
 """.format(master))
 
-print("""\
+print("""
 api.${CLUSTER_NAME}.${CLUSTER_DOMAIN}.              A ${VIP_IP}
 api-int.${CLUSTER_NAME}.${CLUSTER_DOMAIN}.          A ${VIP_IP}
 ${CLUSTER_NAME}-bootstrap.${CLUSTER_DOMAIN}.        A ${BOOTSTRAP_IP}
@@ -362,36 +367,30 @@ sudo podman run -d --rm --name coredns \\
 
 # create an install dir
 sudo -u vagrant mkdir -p /tmp/baremetal
+""")
 
+print("""\
 # create install-config.yaml
 sudo -u vagrant cat <<EOF | tee /tmp/baremetal/install-config.yaml
  apiVersion: v1
- baseDomain: ${CLUSTER_DOMAIN}
+ baseDomain: ${{CLUSTER_DOMAIN}}
  compute:
  - name: worker
-   replicas: 1
+   replicas: 0
  controlPlane:
    name: master
-   platform: {}
-   replicas: 1
+   replicas: {0}
+   platform: {{}}
  metadata:
-   name: ${CLUSTER_NAME}
- networking:
-   clusterNetwork:
-   - cidr: 10.128.0.0/14
-     hostPrefix: 23
-   machineCIDR: 10.0.0.0/16
-   networkType: OpenShiftSDN
-   serviceNetwork:
-   - 172.30.0.0/16
+   name: ${{CLUSTER_NAME}}
  platform:
-   none: {}
- pullSecret: '${PULL_SECRET}'
+   none: {{}}
+ pullSecret: '${{PULL_SECRET}}'
  sshKey: |
-   ${SSH_KEY}
+   ${{SSH_KEY}}
 EOF
 
-""")
+""".format(cluster_masters))
 
 print("""\
 # download and setup openshift-install

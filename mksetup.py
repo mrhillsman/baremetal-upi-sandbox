@@ -17,22 +17,22 @@ if args.cluster_masters < 0 or args.cluster_masters > 9:
 if args.cluster_workers < 0 or args.cluster_workers > 30:
      parser.error('The number of masters must be a positive integer less than or equal to 30.')
 
-matchbox_ip='192.168.0.254'
-vip_ip='192.168.0.254'
-host_ip="192.168.0.1"
-bootstrap_ip='192.168.0.2'
+matchbox_ip='192.168.125.254'
+vip_ip='192.168.125.254'
+host_ip="192.168.125.1"
+bootstrap_ip='192.168.125.2'
 bootstrap_mac='08:00:27:3D:80:00'
 bootstrap_ipmi_user='admin'
 bootstrap_ipmi_pass='password'
 bootstrap_ipmi_port='10000'
 cluster_masters=args.cluster_masters
 cluster_workers=args.cluster_workers
-openshift_installer='http://192.168.0.1:8080/openshift-install-linux-4.4.0-0.nightly-2020-01-14-004804.tar.gz'
-openshift_client='http://192.168.0.1:8080/openshift-client-linux-4.4.0-0.nightly-2020-01-14-004804.tar.gz'
-rhcos_baseuri='http://192.168.0.1:8080/'
-rhcos_initrd=rhcos_baseuri + 'rhcos-44.81.202001030903.0-installer-initramfs.x86_64.img'
-rhcos_kernel=rhcos_baseuri + 'rhcos-44.81.202001030903.0-installer-kernel-x86_64'
-rhcos_osimage=rhcos_baseuri + 'rhcos-44.81.202001030903.0-metal.x86_64.raw.gz'
+openshift_installer='http://192.168.125.1:8080/openshift-install-linux.tar.gz'
+openshift_client='http://192.168.125.1:8080/openshift-client-linux.tar.gz'
+rhcos_baseuri='http://192.168.125.1:8080/'
+rhcos_initrd=rhcos_baseuri + 'rhcos-installer-initramfs.x86_64.img'
+rhcos_kernel=rhcos_baseuri + 'rhcos-installer-kernel-x86_64'
+rhcos_osimage=rhcos_baseuri + 'rhcos-metal.x86_64.raw.gz'
 #rhcos_baseuri='https://releases-art-rhcos.svc.ci.openshift.org/art/storage/releases/rhcos-4.4/44.81.202001030903.0/x86_64/'
 #rhcos_initrd=rhcos_baseuri + 'rhcos-44.81.202001030903.0-installer-initramfs.x86_64.img'
 #rhcos_kernel=rhcos_baseuri + 'rhcos-44.81.202001030903.0-installer-kernel-x86_64'
@@ -62,14 +62,14 @@ export BOOTSTRAP_IPMI_PORT={}
 """.format(bootstrap_ip, bootstrap_mac, bootstrap_ipmi_user, bootstrap_ipmi_pass, bootstrap_ipmi_port))
 
 for master in range(cluster_masters):
-    print("export MASTER{}_IP=192.168.0.{}".format(master, 50+master))
+    print("export MASTER{}_IP=192.168.125.{}".format(master, 50+master))
     print("export MASTER{}_MAC=08:00:27:3d:80:{}".format(master, hex(50+master).lstrip("0x")))
     print("export MASTER{}_IPMI_USER=admin".format(master))
     print("export MASTER{}_IPMI_PASS=password".format(master))
     print("export MASTER{}_IPMI_PORT={}".format(master, 10050+master))
 
 for worker in range(cluster_workers):
-    print("export WORKER{}_IP=192.168.0.{}".format(worker, 100+worker))
+    print("export WORKER{}_IP=192.168.125.{}".format(worker, 100+worker))
     print("export WORKER{}_MAC=08:00:27:3d:90:{}".format(worker, hex(50+worker).lstrip("0x")))
     print("export WORKER{}_IPMI_USER=admin".format(worker))
     print("export WORKER{}_IPMI_PASS=password".format(worker))
@@ -202,14 +202,14 @@ sudo podman run -d --rm \\
   haproxy:alpine
 
 # install terraform + matchbox provider
-sudo -u vagrant wget -v http://192.168.0.1:8080/terraform_0.12.2_linux_amd64.zip
-sudo unzip terraform_0.12.2_linux_amd64.zip -d /bin
+sudo -u vagrant wget -v http://192.168.125.1:8080/terraform_1.7.3_linux_amd64.zip
+sudo unzip terraform_1.7.3_linux_amd64.zip -d /bin
 
-sudo -u vagrant wget -v http://192.168.0.1:8080/terraform-provider-matchbox-v0.3.0-linux-amd64.tar.gz
-sudo -u vagrant tar xzf terraform-provider-matchbox-v0.3.0-linux-amd64.tar.gz
+sudo -u vagrant wget -v http://192.168.125.1:8080/terraform-provider-matchbox-v0.5.2-linux-amd64.tar.gz
+sudo -u vagrant tar xzf terraform-provider-matchbox-v0.5.2-linux-amd64.tar.gz
 sudo -u vagrant cat <<EOF | tee /home/vagrant/.terraformrc
 providers {
-  matchbox = "/home/vagrant/terraform-provider-matchbox-v0.3.0-linux-amd64/terraform-provider-matchbox"
+  matchbox = "/home/vagrant/terraform-provider-matchbox-v0.5.2-linux-amd64/terraform-provider-matchbox"
 }
 EOF
 
@@ -249,9 +249,9 @@ sudo podman run -d --rm --cap-add=NET_ADMIN --net=host \\
   --port=0 \\
   --interface=eth1 \\
   -z \\
-  --dhcp-range=192.168.0.2,192.168.0.253 \\
-  --dhcp-option=3,192.168.0.254 \\
-  --dhcp-option=6,192.168.0.254 \\
+  --dhcp-range=192.168.125.2,192.168.125.253 \\
+  --dhcp-option=3,192.168.125.254 \\
+  --dhcp-option=6,192.168.125.254 \\
   --dhcp-match=set:bios,option:client-arch,0 \\
   --dhcp-boot=tag:bios,undionly.kpxe \\
   --dhcp-match=set:efi32,option:client-arch,6 \\
@@ -268,7 +268,7 @@ sudo podman run -d --rm --cap-add=NET_ADMIN --net=host \\
   --tftp-root=/var/lib/tftpboot \\
   --tftp-no-blocksize \\
   --dhcp-boot=pxelinux.0 \\
-  --dhcp-host=08:00:27:3D:80:00,192.168.0.2,bootstrap \\""")
+  --dhcp-host=08:00:27:3D:80:00,192.168.125.2,bootstrap \\""")
 
 for master in range(cluster_masters):
     print("  --dhcp-host=${{MASTER{0}_MAC}},${{MASTER{0}_IP}},master{0} \\".format(master))
